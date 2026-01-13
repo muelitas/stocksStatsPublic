@@ -1,0 +1,5 @@
+reportlab
+yahooquery
+yfinance
+boto3
+openpyxl

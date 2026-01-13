@@ -1,0 +1,20 @@
+version: "0.2"
+phases:
+  install:
+    commands:
+      # Fetch the unique SHA for tagging Docker images
+      - SHA=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION)
+      - echo Obtained the SHA value $SHA
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region us-west-1 | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.us-west-1.amazonaws.com
+  build:
+    commands:
+      # Tag the image with the SHA
+      - docker build -t stocks-stats:$SHA -f ./Dockerfile .
+  post_build:
+    commands:
+      - docker tag stocks-stats:$SHA $AWS_ACCOUNT_ID.dkr.ecr.us-west-1.amazonaws.com/stocks-stats:$SHA
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.us-west-1.amazonaws.com/stocks-stats:$SHA
+      # Update the Lambda function with the new image
+      - aws lambda update-function-code --function-name stocks-stats --image-uri $AWS_ACCOUNT_ID.dkr.ecr.us-west-1.amazonaws.com/stocks-stats:$SHA
